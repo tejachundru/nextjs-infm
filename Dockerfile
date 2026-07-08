@@ -6,6 +6,8 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 # shared/ must be available before server build (tsconfig paths: "@shared" -> "../shared")
+COPY shared/package*.json ./shared/
+RUN cd shared && npm install
 COPY shared/ ./shared/
 
 # Install server dependencies
