@@ -45,10 +45,7 @@ COPY --from=builder /app/server/dist ./dist/
 COPY --from=builder /app/server/dist-seed ./dist-seed/
 COPY --from=builder /app/server/node_modules ./node_modules/
 
-# Startup: migrate → seed → start server
-COPY server/docker-entrypoint.sh ./
-RUN chmod +x docker-entrypoint.sh
-
 EXPOSE 3001
 
-CMD ["./docker-entrypoint.sh"]
+# Push schema, seed, then start
+CMD sh -c "npx prisma db push --accept-data-loss && node dist-seed/prisma/seed.js && node dist/server/src/main"
