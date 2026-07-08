@@ -23,6 +23,9 @@ COPY server/src ./server/src/
 
 WORKDIR /app/server
 
+# Dummy DATABASE_URL satisfies prisma.config.ts env() during build — no real DB needed for generate/build
+ENV DATABASE_URL=postgresql://build:build@localhost:5432/build
+
 # Generate Prisma client (also runs as part of npm run build, but needed early for type checks)
 RUN npx prisma generate
 
