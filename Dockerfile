@@ -16,6 +16,7 @@ RUN cd server && npm ci
 
 # Copy server source files
 COPY server/prisma ./server/prisma/
+COPY server/prisma.config.ts ./server/
 COPY server/nest-cli.json ./server/
 COPY server/tsconfig*.json ./server/
 COPY server/src ./server/src/
@@ -43,6 +44,7 @@ WORKDIR /app/server
 
 COPY --from=builder /app/server/package*.json ./
 COPY --from=builder /app/server/prisma ./prisma/
+COPY --from=builder /app/server/prisma.config.ts ./
 COPY --from=builder /app/server/dist ./dist/
 COPY --from=builder /app/server/dist-seed ./dist-seed/
 COPY --from=builder /app/server/node_modules ./node_modules/
