@@ -1,14 +1,18 @@
-# ⚠️  This Dockerfile is for local use only (docker build -f server/Dockerfile . from repo root).
-# For Railway deployment use Dockerfile.server at the repo root with RAILWAY_DOCKERFILE_PATH=Dockerfile.server
+# Railway: set RAILWAY_DOCKERFILE_PATH=Dockerfile.server in service variables
+# Build context is always the repo root, so both server/ and shared/ are accessible.
 
+# ---- Build stage ----
 FROM node:20-alpine AS builder
 WORKDIR /app
 
-# Copy shared package first (needed for @shared alias resolution)
+# shared/ must be available before server build (tsconfig paths: "@shared" -> "../shared")
 COPY shared/ ./shared/
 
-# Copy server source
+# Install server dependencies
 COPY server/package*.json ./server/
+RUN cd server && npm ci
+
+# Copy server source files
 COPY server/prisma ./server/prisma/
 COPY server/nest-cli.json ./server/
 COPY server/tsconfig*.json ./server/
@@ -16,18 +20,14 @@ COPY server/src ./server/src/
 
 WORKDIR /app/server
 
-# Install all dependencies (including devDeps needed for build)
-RUN npm ci
-
-# Generate Prisma client
+# Generate Prisma client (also runs as part of npm run build, but needed early for type checks)
 RUN npx prisma generate
 
-# Build NestJS app
+# Build NestJS (webpack bundles @shared inline, so no runtime alias needed)
 RUN npm run build
 
-# Compile seed script to JS
-RUN npx ts-node --version && \
-    npx tsc prisma/seed.ts \
+# Compile seed.ts -> dist-seed/prisma/seed.js
+RUN npx tsc prisma/seed.ts \
       --outDir dist-seed \
       --module commonjs \
       --target ES2021 \
@@ -35,7 +35,7 @@ RUN npx ts-node --version && \
       --skipLibCheck \
       --resolveJsonModule
 
-# ---- Production image ----
+# ---- Production stage ----
 FROM node:20-alpine
 WORKDIR /app/server
 
@@ -47,5 +47,5 @@ COPY --from=builder /app/server/node_modules ./node_modules/
 
 EXPOSE 3001
 
-# Push schema, seed, then start
+# Push schema to DB, seed, then start the API
 CMD sh -c "npx prisma db push --accept-data-loss && node dist-seed/prisma/seed.js && node dist/server/src/main"
