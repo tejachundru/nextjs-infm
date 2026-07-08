@@ -55,4 +55,4 @@ COPY --from=builder /app/server/node_modules ./node_modules/
 EXPOSE 3001
 
 # Push schema to DB, seed, then start the API
-CMD sh -c "npx prisma db push --accept-data-loss && node dist-seed/prisma/seed.js && node dist/server/src/main"
+CMD sh -c "npx prisma db push --accept-data-loss && node dist-seed/seed.js && node dist/server/src/main"
